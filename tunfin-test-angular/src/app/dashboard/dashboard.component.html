@@ -1,0 +1,36 @@
+<div class="container">
+    <h1>TunFin Dashboard</h1>
+    <div *ngIf="message" style="color: green">{{ message }}</div>
+    <div *ngIf="error" style="color: red">{{ error }}</div>
+
+    <div class="section">
+        <h3>My Accounts</h3>
+        <!-- In a real app we would list accounts. Here we just show a Create button or manual fetch -->
+        <button (click)="createAccount()">Create New Wallet (TND)</button>
+        <div *ngFor="let acc of accounts" class="section" style="border-color: #ccc">
+            <p><strong>Account ID:</strong> {{ acc.id }}</p>
+            <p><strong>Currency:</strong> {{ acc.currency }}</p>
+            <div class="balance">{{ acc.balance | currency:acc.currency }}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>P2P Transfer</h3>
+        <div>
+            <label>Sender Account ID:</label>
+            <!-- Dropdown or input. For simplicity, input or select from above -->
+            <input [(ngModel)]="selectedSourceAccount" placeholder="Source Account UUID">
+        </div>
+        <div>
+            <label>Receiver Account ID:</label>
+            <input [(ngModel)]="transferReceiverId" placeholder="Receiver Account UUID">
+        </div>
+        <div>
+            <label>Amount:</label>
+            <input type="number" [(ngModel)]="transferAmount" placeholder="Amount">
+        </div>
+        <button (click)="transfer()">Send Money</button>
+    </div>
+
+    <button (click)="logout()">Logout</button>
+</div>
