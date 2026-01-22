@@ -7,4 +7,6 @@ C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\s
 C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\repository\AccountRepository.java
 C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\repository\TransactionRepository.java
 C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\model\Transaction.java
+C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\security\SecurityConfiguration.java
 C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\dto\WalletDto.java
+C:\Users\M A\.gemini\antigravity\scratch\tunfin-wallet-platform\wallet-service\src\main\java\com\tunfin\wallet\exception\GlobalExceptionHandler.java

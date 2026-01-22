@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 public class WalletDto {
 
@@ -16,7 +15,7 @@ public class WalletDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class CreateAccountRequest {
-        private UUID userId;
+        private String userId;
         private String currency;
     }
 
@@ -36,7 +35,30 @@ public class WalletDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class LedgerEntryRequest {
-        private UUID accountId;
+        private String accountId;
+        private BigDecimal amount;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TransactionResponse {
+        private java.util.UUID id;
+        private String referenceId;
+        private String type;
+        private String status;
+        private String description;
+        private List<LedgerEntryResponse> entries;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LedgerEntryResponse {
+        private java.util.UUID id;
+        private java.util.UUID accountId;
         private BigDecimal amount;
     }
 }

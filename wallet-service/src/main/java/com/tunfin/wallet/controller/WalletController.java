@@ -2,12 +2,12 @@ package com.tunfin.wallet.controller;
 
 import com.tunfin.wallet.dto.WalletDto;
 import com.tunfin.wallet.model.Account;
-import com.tunfin.wallet.model.Transaction;
 import com.tunfin.wallet.service.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,13 +23,18 @@ public class WalletController {
     }
 
     @PostMapping("/ledger/transaction")
-    public ResponseEntity<Transaction> recordTransaction(@RequestBody WalletDto.TransactionRequest request) {
+    public ResponseEntity<WalletDto.TransactionResponse> recordTransaction(
+            @RequestBody WalletDto.TransactionRequest request) {
         return ResponseEntity.ok(ledgerService.recordTransaction(request));
+    }
+
+    @GetMapping("/accounts/user/{userId}")
+    public ResponseEntity<List<Account>> getAccountsByUserId(@PathVariable String userId) {
+        return ResponseEntity.ok(ledgerService.getAccountsByUserId(userId));
     }
 
     @GetMapping("/accounts/{id}")
     public ResponseEntity<Account> getAccount(@PathVariable UUID id) {
-        // Simple get for now, in prod use Repository directly or Service
-        return ResponseEntity.ok(null); // TODO: Implement get
+        return ResponseEntity.ok(ledgerService.getAccount(id));
     }
 }

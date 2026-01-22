@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AuthController {
 
     private final AuthService authService;
@@ -19,6 +20,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthDto.AuthResponse> register(
             @RequestBody AuthDto.RegisterRequest request) {
+        log.info("Received registration request for: {}", request.getPhoneNumber());
         return ResponseEntity.ok(authService.register(request));
     }
 

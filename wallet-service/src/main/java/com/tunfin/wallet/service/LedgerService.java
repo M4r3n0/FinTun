@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.UUID;
+
 import java.math.BigDecimal;
 
 @Service
@@ -16,6 +19,15 @@ public class LedgerService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+
+    public List<Account> getAccountsByUserId(String userId) {
+        return accountRepository.findByUserId(userId);
+    }
+
+    public Account getAccount(UUID id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    }
 
     @Transactional
     public Account createAccount(WalletDto.CreateAccountRequest request) {
@@ -33,7 +45,7 @@ public class LedgerService {
     }
 
     @Transactional
-    public Transaction recordTransaction(WalletDto.TransactionRequest request) {
+    public WalletDto.TransactionResponse recordTransaction(WalletDto.TransactionRequest request) {
         // 1. Validate Idempotency
         if (transactionRepository.existsByReferenceId(request.getReferenceId())) {
             throw new RuntimeException("Transaction already exists");
@@ -58,16 +70,8 @@ public class LedgerService {
 
         // 4. Process Entries & Update Balances
         for (WalletDto.LedgerEntryRequest entryReq : request.getEntries()) {
-            Account account = accountRepository.findById(entryReq.getAccountId())
+            Account account = accountRepository.findById(UUID.fromString(entryReq.getAccountId()))
                     .orElseThrow(() -> new RuntimeException("Account not found"));
-
-            // Logic:
-            // LIABILITY Account (User Wallet):
-            // - Debit (+) means we OWE LESS -> Balance DECREASES
-            // - Credit (-) means we OWE MORE -> Balance INCREASES
-            // ASSET Account (System):
-            // - Debit (+) means we HAVE MORE -> Balance INCREASES
-            // - Credit (-) means we HAVE LESS -> Balance DECREASES
 
             if (account.getType() == AccountType.LIABILITY) {
                 account.setBalance(account.getBalance().subtract(entryReq.getAmount()));
@@ -90,6 +94,21 @@ public class LedgerService {
             tx.getEntries().add(entry);
         }
 
-        return transactionRepository.save(tx);
+        Transaction savedTx = transactionRepository.save(tx);
+
+        return WalletDto.TransactionResponse.builder()
+                .id(savedTx.getId())
+                .referenceId(savedTx.getReferenceId())
+                .type(savedTx.getType())
+                .status(savedTx.getStatus())
+                .description(savedTx.getDescription())
+                .entries(savedTx.getEntries().stream()
+                        .map(e -> WalletDto.LedgerEntryResponse.builder()
+                                .id(e.getId())
+                                .accountId(e.getAccount().getId())
+                                .amount(e.getAmount())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()))
+                .build();
     }
 }
