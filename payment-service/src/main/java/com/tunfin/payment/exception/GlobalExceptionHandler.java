@@ -1,20 +1,78 @@
 package com.tunfin.payment.exception;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ErrorResponse {
+        private String message;
+        private String code;
+        private LocalDateTime timestamp;
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        HttpStatus status = determineStatus(ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .message(ex.getMessage())
+                .code("RUNTIME_ERROR")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .message(message)
+                .code("VALIDATION_ERROR")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<java.util.Map<String, String>> handleException(Exception ex) {
-        String message = ex.getMessage();
-        if (ex.getCause() != null) {
-            message += " | Caused by: " + ex.getCause().getMessage();
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .message("Payment processing failed: " + ex.getMessage())
+                .code("PAYMENT_ERROR")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    private HttpStatus determineStatus(String message) {
+        if (message == null)
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        String lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.contains("not found")) {
+            return HttpStatus.NOT_FOUND;
+        } else if (lowerMessage.contains("insufficient")) {
+            return HttpStatus.BAD_REQUEST;
+        } else if (lowerMessage.contains("already")) {
+            return HttpStatus.CONFLICT;
         }
-        return ResponseEntity.status(500).body(java.util.Map.of(
-                "message", message,
-                "exception", ex.getClass().getSimpleName()));
+        return HttpStatus.BAD_REQUEST;
     }
 }

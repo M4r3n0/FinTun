@@ -20,6 +20,7 @@
         <module>identity-service</module>
         <module>wallet-service</module>
         <module>payment-service</module>
+        <module>qr-service</module>
     </modules>
 
     <properties>

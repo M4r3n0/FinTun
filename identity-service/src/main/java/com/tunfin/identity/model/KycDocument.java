@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,20 +25,38 @@ public class KycDocument {
     @Column(nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String documentType; // ID_CARD, PASSPORT
+    private DocumentType type;
 
     @Column(nullable = false)
-    private String filePath;
+    private String fileUrl; // In real app: S3 URL. Here: simulated path or base64? Let's use simplified
+                            // string.
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private KycStatus status = KycStatus.PENDING;
 
-    @CreationTimestamp
-    private LocalDateTime uploadedAt;
-}
+    @Column(columnDefinition = "TEXT")
+    private String extractedData; // JSON from OCR
 
-enum KycStatus {
-    PENDING, APPROVED, REJECTED
+    private Double confidenceScore; // AI Match Score
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    public enum DocumentType {
+        ID_CARD_FRONT,
+        ID_CARD_BACK,
+        SELFIE
+    }
+
+    public enum KycStatus {
+        PENDING,
+        VERIFIED,
+        REJECTED
+    }
 }

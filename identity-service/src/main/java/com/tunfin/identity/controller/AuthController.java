@@ -19,7 +19,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthDto.AuthResponse> register(
-            @RequestBody AuthDto.RegisterRequest request) {
+            @jakarta.validation.Valid @RequestBody AuthDto.RegisterRequest request) {
         log.info("Received registration request for: {}", request.getPhoneNumber());
         return ResponseEntity.ok(authService.register(request));
     }

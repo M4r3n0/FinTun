@@ -26,6 +26,9 @@ export class LoginComponent {
     password = '';
     fullName = ''; // Register only
     nationalId = ''; // Register only
+    email = ''; // Register only
+    address = ''; // Register only
+    dateOfBirth = ''; // Register only
     error = '';
 
     constructor(private api: ApiService, private router: Router) { }
@@ -42,10 +45,16 @@ export class LoginComponent {
                 phoneNumber: this.phoneNumber,
                 password: this.password,
                 fullName: this.fullName,
-                nationalId: this.nationalId
+                nationalId: this.nationalId,
+                email: this.email,
+                address: this.address,
+                dateOfBirth: this.dateOfBirth
             }).subscribe({
                 next: (res) => {
                     this.api.setToken(res.token);
+                    if (res.userId) {
+                        this.api.setUserId(res.userId);
+                    }
                     this.router.navigate(['/dashboard']);
                 },
                 error: (err) => this.error = 'Registration Failed: ' + (err.error?.message || err.statusText)
@@ -57,6 +66,9 @@ export class LoginComponent {
             }).subscribe({
                 next: (res) => {
                     this.api.setToken(res.token);
+                    if (res.userId) {
+                        this.api.setUserId(res.userId);
+                    }
                     this.router.navigate(['/dashboard']);
                 },
                 error: (err) => this.error = 'Login Failed: ' + (err.error?.message || err.statusText)

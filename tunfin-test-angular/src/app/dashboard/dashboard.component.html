@@ -1,36 +1,76 @@
 <div class="container">
-    <h1>TunFin Dashboard</h1>
-    <div *ngIf="message" style="color: green">{{ message }}</div>
-    <div *ngIf="error" style="color: red">{{ error }}</div>
+    <div class="text-center mb-4">
+        <h1>TunFin Wallet</h1>
+        <p style="color: var(--text-secondary); font-size: 1.125rem;">Manage your finances with ease</p>
+    </div>
 
+    <div *ngIf="message" class="success">{{ message }}</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <!-- My Accounts Section -->
     <div class="section">
-        <h3>My Accounts</h3>
-        <!-- In a real app we would list accounts. Here we just show a Create button or manual fetch -->
-        <button (click)="createAccount()">Create New Wallet (TND)</button>
-        <div *ngFor="let acc of accounts" class="section" style="border-color: #ccc">
-            <p><strong>Account ID:</strong> {{ acc.id }}</p>
-            <p><strong>Currency:</strong> {{ acc.currency }}</p>
-            <div class="balance">{{ acc.balance | currency:acc.currency }}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3>My Accounts</h3>
+            <button (click)="createAccount()" class="secondary">+ Create Wallet</button>
+        </div>
+
+        <div *ngIf="accounts.length === 0" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <p style="font-size: 3rem; margin-bottom: 1rem;">No Accounts</p>
+            <p>Create your first wallet to get started!</p>
+        </div>
+
+        <div *ngFor="let acc of accounts" class="account-card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                        {{ acc.currency }} Account
+                    </p>
+                    <div class="balance">{{ acc.balance | currency:acc.currency }}</div>
+                    <p
+                        style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem; font-family: monospace;">
+                        ID: {{ acc.id }}
+                    </p>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem;">
+                    <p style="color: var(--accent-green); font-weight: 600; font-size: 0.875rem;">ACTIVE</p>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- P2P Transfer Section -->
     <div class="section">
-        <h3>P2P Transfer</h3>
-        <div>
-            <label>Sender Account ID:</label>
-            <!-- Dropdown or input. For simplicity, input or select from above -->
-            <input [(ngModel)]="selectedSourceAccount" placeholder="Source Account UUID">
+        <h3>Send Money</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Transfer funds to another account instantly</p>
+
+        <div class="form-group">
+            <label>From Account</label>
+            <input [(ngModel)]="selectedSourceAccount" placeholder="Your Account UUID" readonly
+                style="background: var(--primary-bg); cursor: not-allowed;">
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                Auto-selected from your accounts above
+            </p>
         </div>
-        <div>
-            <label>Receiver Account ID:</label>
-            <input [(ngModel)]="transferReceiverId" placeholder="Receiver Account UUID">
+
+        <div class="form-group">
+            <label>To Account</label>
+            <input [(ngModel)]="transferReceiverId" placeholder="Receiver's Account UUID">
         </div>
-        <div>
-            <label>Amount:</label>
-            <input type="number" [(ngModel)]="transferAmount" placeholder="Amount">
+
+        <div class="form-group">
+            <label>Amount (TND)</label>
+            <input type="number" [(ngModel)]="transferAmount" placeholder="0.00" step="0.01" min="0">
         </div>
-        <button (click)="transfer()">Send Money</button>
+
+        <button (click)="transfer()" style="width: 100%;">
+            Send Money
+        </button>
     </div>
 
-    <button (click)="logout()">Logout</button>
+    <!-- Logout Button -->
+    <div style="text-align: center; margin-top: 2rem;">
+        <button (click)="logout()" class="secondary" style="padding: 0.75rem 2rem;">
+            Logout
+        </button>
+    </div>
 </div>

@@ -19,7 +19,14 @@ public class WalletController {
 
     @PostMapping("/accounts")
     public ResponseEntity<Account> createAccount(@RequestBody WalletDto.CreateAccountRequest request) {
-        return ResponseEntity.ok(ledgerService.createAccount(request));
+        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        java.math.BigDecimal initialBalance = isAdmin ? java.math.BigDecimal.valueOf(100) : java.math.BigDecimal.ZERO;
+
+        return ResponseEntity.ok(ledgerService.createAccount(request, initialBalance));
     }
 
     @PostMapping("/ledger/transaction")
@@ -36,5 +43,11 @@ public class WalletController {
     @GetMapping("/accounts/{id}")
     public ResponseEntity<Account> getAccount(@PathVariable UUID id) {
         return ResponseEntity.ok(ledgerService.getAccount(id));
+    }
+
+    @GetMapping("/accounts/{accountId}/transactions")
+    public ResponseEntity<java.util.List<WalletDto.TransactionHistoryResponse>> getTransactionHistory(
+            @PathVariable UUID accountId) {
+        return ResponseEntity.ok(ledgerService.getTransactionHistory(accountId));
     }
 }

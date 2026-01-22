@@ -28,6 +28,13 @@ public class User {
     @Column(unique = true)
     private String nationalId;
 
+    @Column(unique = true)
+    private String email;
+
+    private String address;
+
+    private java.time.LocalDate dateOfBirth;
+
     private String fullName;
 
     @Column(nullable = false)
@@ -48,12 +55,4 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-}
-
-enum Role {
-    USER, MERCHANT, ADMIN
-}
-
-enum KycLevel {
-    UNVERIFIED, PENDING_VERIFICATION, VERIFIED, REJECTED
 }

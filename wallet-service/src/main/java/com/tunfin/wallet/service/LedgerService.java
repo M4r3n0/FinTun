@@ -30,7 +30,7 @@ public class LedgerService {
     }
 
     @Transactional
-    public Account createAccount(WalletDto.CreateAccountRequest request) {
+    public Account createAccount(WalletDto.CreateAccountRequest request, BigDecimal initialBalance) {
         if (accountRepository.findByUserIdAndCurrency(request.getUserId(), request.getCurrency()).isPresent()) {
             throw new RuntimeException("Account already exists");
         }
@@ -39,6 +39,7 @@ public class LedgerService {
                 .userId(request.getUserId())
                 .currency(request.getCurrency())
                 .type(AccountType.LIABILITY)
+                .balance(initialBalance != null ? initialBalance : BigDecimal.ZERO)
                 .build();
 
         return accountRepository.save(account);
@@ -110,5 +111,29 @@ public class LedgerService {
                                 .build())
                         .collect(java.util.stream.Collectors.toList()))
                 .build();
+    }
+
+    public List<WalletDto.TransactionHistoryResponse> getTransactionHistory(UUID accountId) {
+        List<Transaction> transactions = transactionRepository.findByAccountId(accountId);
+
+        return transactions.stream()
+                .map(tx -> {
+                    // Find the net amount for this specific account
+                    java.math.BigDecimal netAmount = tx.getEntries().stream()
+                            .filter(e -> e.getAccount().getId().equals(accountId))
+                            .map(LedgerEntry::getAmount)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                    return WalletDto.TransactionHistoryResponse.builder()
+                            .id(tx.getId())
+                            .referenceId(tx.getReferenceId())
+                            .type(tx.getType())
+                            .status(tx.getStatus())
+                            .description(tx.getDescription())
+                            .amount(netAmount)
+                            .createdAt(tx.getCreatedAt())
+                            .build();
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 }

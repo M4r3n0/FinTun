@@ -61,4 +61,18 @@ public class WalletDto {
         private java.util.UUID accountId;
         private BigDecimal amount;
     }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TransactionHistoryResponse {
+        private java.util.UUID id;
+        private String referenceId;
+        private String type;
+        private String status;
+        private String description;
+        private BigDecimal amount; // Net amount for this account
+        private java.time.LocalDateTime createdAt;
+    }
 }
