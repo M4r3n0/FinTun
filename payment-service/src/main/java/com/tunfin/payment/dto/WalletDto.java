@@ -29,4 +29,15 @@ public class WalletDto {
         private UUID accountId;
         private BigDecimal amount;
     }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Account {
+        private UUID id;
+        private String userId;
+        private String currency;
+        private BigDecimal balance;
+    }
 }

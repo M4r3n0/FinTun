@@ -6,6 +6,8 @@ com\tunfin\qr\controller\QrController.class
 com\tunfin\qr\dto\QrDto$ValidateQrRequest.class
 com\tunfin\qr\dto\QrDto$CreatePaymentIntentRequest$CreatePaymentIntentRequestBuilder.class
 com\tunfin\qr\model\QrCode$QrStatus.class
+com\tunfin\qr\client\PaymentClient$TransferRequest.class
+com\tunfin\qr\client\PaymentClient.class
 com\tunfin\qr\service\QrService.class
 com\tunfin\qr\model\QrCode$QrType.class
 com\tunfin\qr\dto\QrDto$GenerateStaticQrRequest.class
@@ -14,15 +16,18 @@ com\tunfin\qr\QrServiceApplication.class
 com\tunfin\qr\repository\PaymentIntentRepository.class
 com\tunfin\qr\dto\QrDto$ValidateQrRequest$ValidateQrRequestBuilder.class
 com\tunfin\qr\model\QrCode$QrCodeBuilder.class
+com\tunfin\qr\dto\QrDto$PaymentExecutionResponse.class
 com\tunfin\qr\model\QrCode.class
 com\tunfin\qr\dto\QrDto$QrValidationResponse.class
 com\tunfin\qr\model\PaymentIntent$PaymentStatus.class
 com\tunfin\qr\model\PaymentIntent.class
 com\tunfin\qr\model\PaymentIntent$PaymentIntentBuilder.class
 com\tunfin\qr\dto\QrDto$GenerateStaticQrRequest$GenerateStaticQrRequestBuilder.class
+com\tunfin\qr\client\PaymentClient$PaymentResponse.class
 com\tunfin\qr\security\SecurityConfiguration.class
 com\tunfin\qr\dto\QrDto$CreatePaymentIntentRequest.class
 com\tunfin\qr\dto\QrDto$PaymentIntentResponse.class
 com\tunfin\qr\dto\QrDto$PaymentIntentResponse$PaymentIntentResponseBuilder.class
+com\tunfin\qr\dto\QrDto$PaymentExecutionResponse$PaymentExecutionResponseBuilder.class
 com\tunfin\qr\dto\QrDto$GenerateDynamicQrRequest.class
 com\tunfin\qr\dto\QrDto.class

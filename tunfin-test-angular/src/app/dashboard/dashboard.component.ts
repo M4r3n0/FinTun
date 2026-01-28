@@ -51,6 +51,24 @@ import { Router } from '@angular/router';
          <input placeholder="Receiver ID (UUID)" [(ngModel)]="transferReceiverId">
          <input type="number" placeholder="Amount" [(ngModel)]="transferAmount">
          <button (click)="transfer()">Send Money</button>
+      </div>
+
+      <!-- Transaction History -->
+      <div class="section">
+        <h3>Transaction History</h3>
+        <button (click)="router.navigate(['/disputes'])" style="margin-bottom: 10px;">View My Disputes</button>
+        <div *ngFor="let tx of transactions" class="tx-card">
+          <div class="tx-info">
+            <span class="tx-type" [ngClass]="tx.type">{{ tx.type }}</span>
+            <span class="tx-amount">{{ tx.amount | number:'1.2-2' }} TND</span>
+          </div>
+          <p class="tx-id">ID: {{ tx.id }}</p>
+          <button class="report-btn" (click)="reportDispute(tx.id)">Report Problem</button>
+        </div>
+        <div *ngIf="transactions.length === 0" class="empty">No transactions yet.</div>
+      </div>
+
+      <div class="section status-section">
          <p class="error">{{ error }}</p>
          <p class="success">{{ message }}</p>
       </div>
@@ -66,6 +84,31 @@ import { Router } from '@angular/router';
     .kyc.VERIFIED { border-left-color: #2ecc71; }
     .kyc.PENDING { border-left-color: #f1c40f; }
     .kyc.UNVERIFIED { border-left-color: #95a5a6; }
+    
+    .tx-card { 
+      background: rgba(255,255,255,0.05); 
+      padding: 10px; 
+      border-radius: 4px; 
+      margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tx-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .tx-type { font-weight: bold; font-size: 0.8rem; text-transform: uppercase; }
+    .DEBIT { color: #e74c3c; }
+    .CREDIT { color: #2ecc71; }
+    .tx-amount { font-weight: bold; }
+    .tx-id { font-size: 0.7rem; color: #888; margin: 0; }
+    .report-btn { 
+      background: none; 
+      border: 1px solid #4facfe; 
+      color: #4facfe; 
+      font-size: 0.7rem; 
+      padding: 2px 5px; 
+      margin-top: 5px;
+      border-radius: 3px;
+    }
+    .report-btn:hover { background: rgba(79, 172, 254, 0.1); }
+    .status-section { border-top: 2px solid #333; margin-top: 30px; }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -83,6 +126,8 @@ export class DashboardComponent implements OnInit {
     message = '';
     error = '';
 
+    transactions: any[] = [];
+
     // KYC
     kycDocs: any[] = [];
     kycStatus = 'UNVERIFIED';
@@ -94,6 +139,7 @@ export class DashboardComponent implements OnInit {
         if (this.userId) {
             this.fetchAccounts();
             this.fetchKycStatus();
+            this.fetchHistory();
         }
     }
 
@@ -183,9 +229,29 @@ export class DashboardComponent implements OnInit {
             next: (res) => {
                 this.message = 'Transfer Successful! Status: ' + res.status;
                 this.refreshAccount(this.selectedSourceAccount);
+                this.fetchHistory();
             },
             error: (err) => this.error = 'Transfer Failed: ' + (err.error?.message || err.statusText)
         });
+    }
+
+    fetchHistory() {
+        this.api.getTransactionHistory(this.userId).subscribe(res => {
+            this.transactions = res;
+        });
+    }
+
+    reportDispute(paymentId: string) {
+        const reason = prompt("What is the issue with this transaction?");
+        if (reason) {
+            this.api.fileDispute(paymentId, reason).subscribe({
+                next: (res) => {
+                    alert('Dispute filed successfully. Initial status: ' + res.status);
+                    this.router.navigate(['/disputes']);
+                },
+                error: (err) => alert('Failed to file dispute: ' + (err.error?.message || err.statusText))
+            });
+        }
     }
 
     refreshAccount(id: string) {

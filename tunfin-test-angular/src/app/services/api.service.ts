@@ -113,6 +113,23 @@ export class ApiService {
     return this.http.post(`/api/kyc/review/${userId}?approve=${approve}`, {}, { headers: this.getHeaders() });
   }
 
+  // --- Dispute Resolution API ---
+  fileDispute(paymentId: string, reason: string): Observable<any> {
+    return this.http.post('/api/disputes', { paymentId, reason }, { headers: this.getHeaders() });
+  }
+
+  getMyDisputes(): Observable<any[]> {
+    return this.http.get<any[]>('/api/disputes/my-disputes', { headers: this.getHeaders() });
+  }
+
+  getAllDisputes(): Observable<any[]> {
+    return this.http.get<any[]>('/api/disputes/admin/all', { headers: this.getHeaders() });
+  }
+
+  resolveDispute(disputeId: string, status: string): Observable<any> {
+    return this.http.post(`/api/disputes/admin/resolve/${disputeId}?status=${status}`, {}, { headers: this.getHeaders() });
+  }
+
   // Subsidies
   getSubsidies(): Observable<any> {
     return this.http.get('/api/subsidies', { headers: this.getHeaders() });

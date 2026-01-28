@@ -50,5 +50,6 @@ public class AuthDto {
     public static class AuthResponse {
         private String token;
         private String userId;
+        private String role;
     }
 }

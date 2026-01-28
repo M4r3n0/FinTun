@@ -50,6 +50,8 @@ public class User {
 
     private boolean isActive = true;
 
+    private String fcmToken;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

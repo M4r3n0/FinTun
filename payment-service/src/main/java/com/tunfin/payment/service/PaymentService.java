@@ -15,53 +15,77 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentService {
 
-    private final PaymentRepository paymentRepository;
-    private final WalletClient walletClient;
+        private final PaymentRepository paymentRepository;
+        private final WalletClient walletClient;
+        private final com.tunfin.payment.client.IdentityClient identityClient;
+        private final EmailService emailService;
+        private final NotificationService notificationService;
 
-    public Payment processP2PTransfer(UUID senderAccountId, UUID receiverAccountId, BigDecimal amount) {
-        // 1. Create Transaction Request for Wallet Service
-        // Credit Sender (-), Debit Receiver (+) ?? No.
-        // Sender (Liability) loses money -> Debit (+)?
-        // Wait, Liability Account:
-        // Debit (+) = Decrease Balance (Owe Less)
-        // Credit (-) = Increase Balance (Owe More) -> Deposit
+        public Payment processP2PTransfer(UUID senderAccountId, UUID receiverAccountId, BigDecimal amount) {
+                // 1. Fetch Account Details to get User IDs
+                var senderAccount = walletClient.getAccount(senderAccountId);
+                var receiverAccount = walletClient.getAccount(receiverAccountId);
 
-        // P2P:
-        // Sender (Liability) Balance decreases -> Debit (+)
-        // Receiver (Liability) Balance increases -> Credit (-)
+                // 2. Fetch User Details to get Emails
+                var senderUser = identityClient.getUserById(UUID.fromString(senderAccount.getUserId()));
+                var receiverUser = identityClient.getUserById(UUID.fromString(receiverAccount.getUserId()));
 
-        // Wait, standard accounting:
-        // Assets = Liabilities + Equity
-        // Cash (Asset) Debit (+), Credit (-)
-        // User Wallet (Liability from Bank perspective):
-        // We (Bank) owe user money.
-        // User spends money -> We owe less -> Debit Liability.
-        // User receives money -> We owe more -> Credit Liability.
+                // 3. Record Transaction in Wallet Service
+                var req = com.tunfin.payment.dto.WalletDto.TransactionRequest.builder()
+                                .referenceId(UUID.randomUUID().toString())
+                                .type("P2P_TRANSFER")
+                                .description("Transfer from " + senderUser.get("fullName") + " to "
+                                                + receiverUser.get("fullName"))
+                                .entries(List.of(
+                                                new com.tunfin.payment.dto.WalletDto.LedgerEntryRequest(senderAccountId,
+                                                                amount), // Debit
+                                                new com.tunfin.payment.dto.WalletDto.LedgerEntryRequest(
+                                                                receiverAccountId, amount.negate()) // Credit
+                                ))
+                                .build();
 
-        // Correct logic:
-        // Sender: Debit (+) amount
-        // Receiver: Credit (-) amount
-        // Sum = 0.
+                walletClient.recordTransaction(req);
 
-        var req = WalletDto.TransactionRequest.builder()
-                .referenceId(UUID.randomUUID().toString())
-                .type("P2P_TRANSFER")
-                .description("Transfer from " + senderAccountId)
-                .entries(List.of(
-                        new WalletDto.LedgerEntryRequest(senderAccountId, amount), // Debit
-                        new WalletDto.LedgerEntryRequest(receiverAccountId, amount.negate()) // Credit
-                ))
-                .build();
+                // 4. Save Payment Record
+                var payment = Payment.builder()
+                                .senderId(senderAccountId)
+                                .receiverId(receiverAccountId)
+                                .amount(amount)
+                                .status("SUCCESS")
+                                .build();
+                payment = paymentRepository.save(payment);
 
-        walletClient.recordTransaction(req);
+                // 5. Send Notifications
+                try {
+                        emailService.sendTransferNotification(
+                                        senderUser.get("email"),
+                                        senderUser.get("fullName"),
+                                        "SENDER",
+                                        amount,
+                                        receiverUser.get("fullName"));
 
-        var payment = Payment.builder()
-                .senderId(senderAccountId) // Actually storing Account ID here for now
-                .receiverId(receiverAccountId)
-                .amount(amount)
-                .status("SUCCESS")
-                .build();
+                        emailService.sendTransferNotification(
+                                        receiverUser.get("email"),
+                                        receiverUser.get("fullName"),
+                                        "RECEIVER",
+                                        amount,
+                                        senderUser.get("fullName"));
 
-        return paymentRepository.save(payment);
-    }
+                        // Push Notifications
+                        notificationService.sendPushNotification(
+                                        senderUser.get("fcmToken"),
+                                        "Transfer Sent",
+                                        "You sent " + amount + " TND to " + receiverUser.get("fullName"));
+
+                        notificationService.sendPushNotification(
+                                        receiverUser.get("fcmToken"),
+                                        "Transfer Received",
+                                        "You received " + amount + " TND from " + senderUser.get("fullName"));
+                } catch (Exception e) {
+                        // Log but don't fail the transaction if email/push fails
+                        System.err.println(">>> FAILED to send notifications: " + e.getMessage());
+                }
+
+                return payment;
+        }
 }

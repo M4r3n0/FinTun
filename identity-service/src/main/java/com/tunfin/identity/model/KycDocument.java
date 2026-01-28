@@ -26,12 +26,11 @@ public class KycDocument {
     private UUID userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "document_type", nullable = false)
     private DocumentType type;
 
-    @Column(nullable = false)
-    private String fileUrl; // In real app: S3 URL. Here: simulated path or base64? Let's use simplified
-                            // string.
+    @Column(name = "file_url", nullable = false)
+    private String fileUrl; // Mapped to file_url (DB uses mixed schema)
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

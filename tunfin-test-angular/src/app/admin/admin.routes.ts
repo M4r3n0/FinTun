@@ -11,7 +11,8 @@ export const ADMIN_ROUTES: Routes = [
             { path: '', redirectTo: 'users', pathMatch: 'full' },
             { path: 'users', component: UserListComponent },
             { path: 'kyc', component: KycReviewComponent },
-            { path: 'subsidies', loadComponent: () => import('./subsidy-admin/subsidy-admin.component').then(m => m.SubsidyAdminComponent) }
+            { path: 'subsidies', loadComponent: () => import('./subsidy-admin/subsidy-admin.component').then(m => m.SubsidyAdminComponent) },
+            { path: 'disputes', loadComponent: () => import('./dispute-admin/dispute-admin.component').then(m => m.DisputeAdminComponent) }
         ]
     }
 ];

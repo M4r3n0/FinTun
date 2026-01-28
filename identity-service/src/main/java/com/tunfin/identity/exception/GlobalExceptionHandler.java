@@ -53,8 +53,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // Log stack trace
         ErrorResponse error = ErrorResponse.builder()
-                .message("An unexpected error occurred")
+                .message("An unexpected error occurred: " + ex.getMessage())
                 .code("INTERNAL_ERROR")
                 .timestamp(LocalDateTime.now())
                 .build();

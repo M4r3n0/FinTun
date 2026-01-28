@@ -71,7 +71,7 @@ public class LedgerService {
 
         // 4. Process Entries & Update Balances
         for (WalletDto.LedgerEntryRequest entryReq : request.getEntries()) {
-            Account account = accountRepository.findById(UUID.fromString(entryReq.getAccountId()))
+            Account account = accountRepository.findWithLockById(UUID.fromString(entryReq.getAccountId()))
                     .orElseThrow(() -> new RuntimeException("Account not found"));
 
             if (account.getType() == AccountType.LIABILITY) {

