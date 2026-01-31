@@ -62,4 +62,10 @@ public class KycController {
         // Logic to parse JSON and update user status would go here
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/view/{filename}")
+    public org.springframework.core.io.Resource viewDocument(@PathVariable String filename) {
+        java.nio.file.Path path = java.nio.file.Paths.get("uploads", "kyc", filename);
+        return new org.springframework.core.io.FileSystemResource(path);
+    }
 }

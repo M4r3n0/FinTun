@@ -15,4 +15,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     @Query("SELECT DISTINCT t FROM Transaction t JOIN t.entries e WHERE e.account.id = :accountId ORDER BY t.createdAt DESC")
     List<Transaction> findByAccountId(@Param("accountId") UUID accountId);
+
+    @Query("SELECT DISTINCT t FROM Transaction t JOIN t.entries e WHERE e.account.userId = :userId ORDER BY t.createdAt DESC")
+    List<Transaction> findByUserId(@Param("userId") String userId);
 }

@@ -73,6 +73,7 @@ public class AuthService {
                                 .token(jwtToken)
                                 .userId(user.getId().toString())
                                 .role("ROLE_" + user.getRole().name())
+                                .kycLevel(user.getKycLevel().name())
                                 .build();
         }
 
@@ -113,6 +114,7 @@ public class AuthService {
                                 .token(jwtToken)
                                 .userId(user.getId().toString())
                                 .role("ROLE_" + user.getRole().name())
+                                .kycLevel(user.getKycLevel().name())
                                 .build();
         }
 }

@@ -103,29 +103,50 @@ public class KycService {
     public KycDocument uploadDocument(UUID userId, MultipartFile file, KycDocument.DocumentType type) {
         log.info("Uploading KYC document for user: {}", userId);
 
-        // Simulator: "Store" file by creating a mock URL using filename
-        String mockUrl = "https://s3.tunfin.com/kyc/" + userId + "/" + file.getOriginalFilename();
+        try {
+            // Ensure upload directory exists
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads", "kyc");
+            if (!java.nio.file.Files.exists(uploadPath)) {
+                java.nio.file.Files.createDirectories(uploadPath);
+            }
 
-        KycDocument document = KycDocument.builder()
-                .userId(userId)
-                .type(type)
-                .fileUrl(mockUrl)
-                .status(KycDocument.KycStatus.PENDING)
-                .build();
+            // Generate unique filename
+            String filename = userId + "_" + type + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            java.nio.file.Path filePath = uploadPath.resolve(filename);
 
-        document = kycDocumentRepository.save(document);
+            // Save file
+            java.nio.file.Files.copy(file.getInputStream(), filePath,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-        // Update User Status
-        User user = userRepository.findById(userId).orElseThrow();
-        if (user.getKycLevel() == KycLevel.UNVERIFIED || user.getKycLevel() == KycLevel.REJECTED) {
-            user.setKycLevel(KycLevel.PENDING_VERIFICATION);
-            userRepository.save(user);
+            // URL that will be served by our controller
+            String fileUrl = "/api/kyc/view/" + filename;
+
+            KycDocument document = KycDocument.builder()
+                    .userId(userId)
+                    .type(type)
+                    .documentType(type)
+                    .fileUrl(fileUrl)
+                    .filePath(filePath.toString())
+                    .status(KycDocument.KycStatus.PENDING)
+                    .build();
+
+            document = kycDocumentRepository.save(document);
+
+            // Update User Status
+            User user = userRepository.findById(userId).orElseThrow();
+            if (user.getKycLevel() == KycLevel.UNVERIFIED || user.getKycLevel() == KycLevel.REJECTED) {
+                user.setKycLevel(KycLevel.PENDING_VERIFICATION);
+                userRepository.save(user);
+            }
+
+            // Trigger Async Analysis (Simulated)
+            triggerAiAnalysis(document);
+
+            return document;
+        } catch (java.io.IOException e) {
+            log.error("Failed to save KYC document: {}", e.getMessage());
+            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
-
-        // Trigger Async Analysis (Simulated)
-        triggerAiAnalysis(document);
-
-        return document;
     }
 
     private void triggerAiAnalysis(KycDocument document) {
@@ -146,11 +167,13 @@ public class KycService {
                     log.info("Face Match Completed for doc: {}", document.getId());
                 }
 
-                document.setStatus(KycDocument.KycStatus.VERIFIED); // Auto-verify doc for demo
+                // document.setStatus(KycDocument.KycStatus.APPROVED); // DISABLED auto-verify
+                // for manual review flow
                 kycDocumentRepository.save(document);
 
-                // Auto-Verify User if all docs present (Simplified)
-                checkAndVerifyUser(document.getUserId());
+                // Auto-Verify User if all docs present (Simplified) - DISABLED for manual
+                // review
+                // checkAndVerifyUser(document.getUserId());
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -161,9 +184,9 @@ public class KycService {
     private void checkAndVerifyUser(UUID userId) {
         List<KycDocument> docs = kycDocumentRepository.findByUserId(userId);
         boolean hasId = docs.stream().anyMatch(d -> d.getType() == KycDocument.DocumentType.ID_CARD_FRONT
-                && d.getStatus() == KycDocument.KycStatus.VERIFIED);
+                && d.getStatus() == KycDocument.KycStatus.APPROVED);
         boolean hasSelfie = docs.stream().anyMatch(
-                d -> d.getType() == KycDocument.DocumentType.SELFIE && d.getStatus() == KycDocument.KycStatus.VERIFIED);
+                d -> d.getType() == KycDocument.DocumentType.SELFIE && d.getStatus() == KycDocument.KycStatus.APPROVED);
 
         if (hasId && hasSelfie) {
             User user = userRepository.findById(userId).orElseThrow();
@@ -189,27 +212,37 @@ public class KycService {
         user.setKycLevel(approve ? KycLevel.VERIFIED : KycLevel.REJECTED);
         userRepository.save(user);
 
-        // Update documents?
+        // Update documents
+        List<KycDocument> docs = kycDocumentRepository.findByUserId(userId);
         if (approve) {
-            List<KycDocument> docs = kycDocumentRepository.findByUserId(userId);
             if (docs.isEmpty()) {
                 // Ensure UI sees a verified document in demo mode
                 KycDocument mockDoc = KycDocument.builder()
                         .userId(userId)
                         .type(KycDocument.DocumentType.ID_CARD_FRONT)
+                        .documentType(KycDocument.DocumentType.ID_CARD_FRONT)
                         .fileUrl("https://mock.sumsub.com/demo.png")
-                        .status(KycDocument.KycStatus.VERIFIED)
+                        .filePath("mock/demo.png")
+                        .status(KycDocument.KycStatus.APPROVED)
                         .build();
                 kycDocumentRepository.save(mockDoc);
                 log.info(">>> KYC: Created mock document for verified user: {}", userId);
             } else {
                 docs.forEach(d -> {
-                    if (d.getStatus() != KycDocument.KycStatus.VERIFIED) {
-                        d.setStatus(KycDocument.KycStatus.VERIFIED);
+                    if (d.getStatus() != KycDocument.KycStatus.APPROVED) {
+                        d.setStatus(KycDocument.KycStatus.APPROVED);
                         kycDocumentRepository.save(d);
                     }
                 });
             }
+        } else {
+            // REJECT case
+            docs.forEach(d -> {
+                if (d.getStatus() != KycDocument.KycStatus.REJECTED) {
+                    d.setStatus(KycDocument.KycStatus.REJECTED);
+                    kycDocumentRepository.save(d);
+                }
+            });
         }
     }
 

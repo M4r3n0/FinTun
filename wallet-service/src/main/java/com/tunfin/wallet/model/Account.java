@@ -42,4 +42,8 @@ public class Account {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    private String cardNumber;
+    private String cvv;
+    private String expiryDate;
 }

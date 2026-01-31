@@ -50,4 +50,10 @@ public class WalletController {
             @PathVariable UUID accountId) {
         return ResponseEntity.ok(ledgerService.getTransactionHistory(accountId));
     }
+
+    @GetMapping("/ledger/history/{userId}")
+    public ResponseEntity<java.util.List<WalletDto.TransactionHistoryResponse>> getGlobalTransactionHistory(
+            @PathVariable String userId) {
+        return ResponseEntity.ok(ledgerService.getUserHistory(userId));
+    }
 }

@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class PaymentService {
 
         private final PaymentRepository paymentRepository;
@@ -26,11 +27,26 @@ public class PaymentService {
                 var senderAccount = walletClient.getAccount(senderAccountId);
                 var receiverAccount = walletClient.getAccount(receiverAccountId);
 
-                // 2. Fetch User Details to get Emails
+                // 2. Fetch User Details to get Emails and KYC status
                 var senderUser = identityClient.getUserById(UUID.fromString(senderAccount.getUserId()));
                 var receiverUser = identityClient.getUserById(UUID.fromString(receiverAccount.getUserId()));
 
-                // 3. Record Transaction in Wallet Service
+                // 3. Enforce KYC for Sender and Receiver
+                if (!"VERIFIED".equals(senderUser.get("kycLevel"))) {
+                        log.error(">>> P2P Denied: Sender {} is not VERIFIED. Current level: {}",
+                                        senderUser.get("fullName"), senderUser.get("kycLevel"));
+                        throw new RuntimeException(
+                                        "KYC Verification Required for P2P Transfers. Please verify your identity first.");
+                }
+
+                if (!"VERIFIED".equals(receiverUser.get("kycLevel"))) {
+                        log.error(">>> P2P Denied: Receiver {} is not VERIFIED. Current level: {}",
+                                        receiverUser.get("fullName"), receiverUser.get("kycLevel"));
+                        throw new RuntimeException(
+                                        "Recipient is not KYC verified. They must verify their identity to receive funds.");
+                }
+
+                // 4. Record Transaction in Wallet Service
                 var req = com.tunfin.payment.dto.WalletDto.TransactionRequest.builder()
                                 .referenceId(UUID.randomUUID().toString())
                                 .type("P2P_TRANSFER")

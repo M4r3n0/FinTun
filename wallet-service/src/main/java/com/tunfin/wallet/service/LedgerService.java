@@ -40,9 +40,32 @@ public class LedgerService {
                 .currency(request.getCurrency())
                 .type(AccountType.LIABILITY)
                 .balance(initialBalance != null ? initialBalance : BigDecimal.ZERO)
+                .cardNumber(generateCardNumber())
+                .cvv(generateCvv())
+                .expiryDate(generateExpiryDate())
                 .build();
 
         return accountRepository.save(account);
+    }
+
+    private String generateCardNumber() {
+        java.util.Random random = new java.util.Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 4; i++) {
+            sb.append(1000 + random.nextInt(9000));
+            if (i < 3)
+                sb.append(" ");
+        }
+        return sb.toString();
+    }
+
+    private String generateCvv() {
+        return String.format("%03d", new java.util.Random().nextInt(1000));
+    }
+
+    private String generateExpiryDate() {
+        return java.time.LocalDate.now().plusYears(5)
+                .format(java.time.format.DateTimeFormatter.ofPattern("MM/yy"));
     }
 
     @Transactional
@@ -115,7 +138,35 @@ public class LedgerService {
 
     public List<WalletDto.TransactionHistoryResponse> getTransactionHistory(UUID accountId) {
         List<Transaction> transactions = transactionRepository.findByAccountId(accountId);
+        return mapToHistoryResponse(transactions, accountId);
+    }
 
+    public List<WalletDto.TransactionHistoryResponse> getUserHistory(String userId) {
+        List<Transaction> transactions = transactionRepository.findByUserId(userId);
+        // For user-wide history, we need to decide which "amount" to show.
+        // We'll show the net amount across all of user's accounts involved in the tx.
+        return transactions.stream()
+                .map(tx -> {
+                    java.math.BigDecimal netAmount = tx.getEntries().stream()
+                            .filter(e -> e.getAccount().getUserId().equals(userId))
+                            .map(LedgerEntry::getAmount)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                    return WalletDto.TransactionHistoryResponse.builder()
+                            .id(tx.getId())
+                            .referenceId(tx.getReferenceId())
+                            .type(tx.getType())
+                            .status(tx.getStatus())
+                            .description(tx.getDescription())
+                            .amount(netAmount)
+                            .createdAt(tx.getCreatedAt())
+                            .build();
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private List<WalletDto.TransactionHistoryResponse> mapToHistoryResponse(List<Transaction> transactions,
+            UUID accountId) {
         return transactions.stream()
                 .map(tx -> {
                     // Find the net amount for this specific account

@@ -27,6 +27,7 @@ public class UserController {
                     Map<String, String> res = new HashMap<>();
                     res.put("userId", user.getId().toString());
                     res.put("fullName", user.getFullName());
+                    res.put("kycLevel", user.getKycLevel().toString());
                     return ResponseEntity.ok(res);
                 })
                 .orElseGet(() -> {
@@ -44,6 +45,7 @@ public class UserController {
                     res.put("fullName", user.getFullName());
                     res.put("email", user.getEmail());
                     res.put("fcmToken", user.getFcmToken());
+                    res.put("kycLevel", user.getKycLevel().toString());
                     return ResponseEntity.ok(res);
                 })
                 .orElse(ResponseEntity.notFound().build());

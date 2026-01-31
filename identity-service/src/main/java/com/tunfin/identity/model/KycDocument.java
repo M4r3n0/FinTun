@@ -26,11 +26,18 @@ public class KycDocument {
     private UUID userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "document_type", nullable = false)
+    @Column(name = "type", nullable = false)
     private DocumentType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false)
+    private DocumentType documentType;
 
     @Column(name = "file_url", nullable = false)
     private String fileUrl; // Mapped to file_url (DB uses mixed schema)
+
+    @Column(name = "file_path", nullable = false)
+    private String filePath; // Missing mandatory field for DB constraint
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -55,7 +62,7 @@ public class KycDocument {
 
     public enum KycStatus {
         PENDING,
-        VERIFIED,
+        APPROVED,
         REJECTED
     }
 }
